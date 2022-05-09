@@ -5,6 +5,7 @@
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
 #include "ssd1306.h"
+#include "5x8_font.h"
 
 #define PAGE_SIZE 8
 
@@ -137,10 +138,39 @@ void oled_init() {
     oled_send_cmd(OLED_SET_DISP | 0x01); // turn display on
 }
 
+/*
+ * Prints a line of text into the display's buffer.
+ * Begins by scrolling the entire display up by one page, then writes the contents of str into the bottom of the
+ * display. Truncates if more than 25 characters are present.
+ */
+void display_println(display *dsp,const char *str) {
+    // "scroll" up by a page
+    memcpy(dsp->buffer, dsp->buffer + 128, dsp->bufferLength - 128);
+    int idx = 128 * 6; // Beginning of page 7
+    memset(dsp->buffer + idx, 0, 128); // Write zeroes in to erase the contents of the page
+    // Run for 25 characters, or until we reach a null terminator
+    for (int c = 0; c < 25 && str[c] != 0x00; c++) {
+        char glyph = str[c];
+        memcpy(dsp->buffer + idx, font[glyph], 5);
+        idx+=5;
+    }
+}
 
 #define I2C_PORT i2c0
 #define I2C_SDA 16
 #define I2C_SCL 17
+
+void render(display *dsp) {
+    oled_send_cmd(OLED_SET_COL_ADDR);
+    oled_send_cmd(0);
+    oled_send_cmd(127);
+
+    oled_send_cmd(OLED_SET_PAGE_ADDR);
+    oled_send_cmd(0);
+    oled_send_cmd(7);
+
+    oled_send_buf(dsp->buffer, dsp->bufferLength);
+}
 
 int main()
 {
@@ -158,40 +188,30 @@ int main()
 
     oled_init();
 
-    display *dsp = createDisplay(128, 64);
-
-    oled_send_cmd(OLED_SET_COL_ADDR);
-    oled_send_cmd(0);
-    oled_send_cmd(127);
-
-    oled_send_cmd(OLED_SET_PAGE_ADDR);
-    oled_send_cmd(0);
-    oled_send_cmd(7);
-
-    oled_send_buf(dsp->buffer, dsp->bufferLength);
-
-    // Draw a diagonal across the screen
-    uint8_t x = 0;
-    uint8_t y = 0;
-    for (y = 0; y < 64; y++) {
-        setPixel(dsp, x++, y, true);
-        setPixel(dsp, x++, y, true);
-    }
-    // Draw a square in the middle
-    for (y = 30; y < 38; y++) {
-        for (x = 60; x < 68; x++) {
-            setPixel(dsp, x , y, true);
-        }
-    }
-    // Draw a line at the bottom of the yellow
-    y = 15;
-    for (x = 0; x < 128; x++) {
-        setPixel(dsp, x, y, true);
-    }
-    oled_send_buf(dsp->buffer, dsp->bufferLength);
-
     oled_send_cmd(OLED_SET_CONTRAST);
     oled_send_cmd(0x01);
+
+    // Create an empty display and render it
+    display *dsp = createDisplay(128, 64);
+    render(dsp);
+
+    display_println(dsp, "This is a test.");
+    display_println(dsp, "And only a test!");
+    display_println(dsp, "0123456789ABCDEF0123456789");
+
+    render(dsp);
+
+    sleep_ms(2000);
+    display_println(dsp, "Are we done yet?");
+    render(dsp);
+
+    sleep_ms(2000);
+    display_println(dsp, "I wanna go home...");
+    render(dsp);
+
+    sleep_ms(1000);
+    display_println(dsp, "Why won't you let me go...");
+    render(dsp);
 
     return 0;
 }
