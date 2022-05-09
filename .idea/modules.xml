@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/oled.iml" filepath="$PROJECT_DIR$/.idea/oled.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pico-experiments-oled.iml" filepath="$PROJECT_DIR$/.idea/pico-experiments-oled.iml" />
     </modules>
   </component>
 </project>

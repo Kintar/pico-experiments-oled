@@ -1,0 +1,85 @@
+#include <stdlib.h>
+#include "hardware/i2c.h"
+#include "ssd1306.h"
+
+void oled_send_cmd(uint8_t cmd) {
+    // I2C write process expects a control byte followed by data
+    // this "data" can be a command or data to follow up a command
+
+    // Co = 1, D/C = 0 => the driver expects a command
+    uint8_t buf[2] = {0x80, cmd};
+    i2c_write_blocking(i2c_default, (OLED_ADDR & OLED_WRITE_MODE), buf, 2, false);
+}
+
+void oled_send_buf(const uint8_t *buf, int bufferLength) {
+    // in horizontal addressing mode, the column address pointer auto-increments
+    // and then wraps around to the next page
+
+    // copy our frame buffer into a new buffer because we need to add the control byte
+    // to the beginning
+
+    // TODO find a more memory-efficient way to do this..
+    // maybe break the data transfer into pages?
+    uint8_t *temp_buf = malloc(bufferLength + 1);
+
+    for (int i = 1; i < bufferLength + 1; i++) {
+        temp_buf[i] = buf[i - 1];
+    }
+    // Co = 0, D/C = 1 => the driver expects data to be written to RAM
+    temp_buf[0] = 0x40;
+    i2c_write_blocking(i2c_default, (OLED_ADDR & OLED_WRITE_MODE), temp_buf, bufferLength + 1, false);
+
+    free(temp_buf);
+}
+
+void oled_init() {
+    oled_send_cmd(OLED_SET_DISP | 0x00); // set display off
+
+    /* memory mapping */
+    oled_send_cmd(OLED_SET_MEM_ADDR); // set memory address mode
+    oled_send_cmd(0x00); // horizontal addressing mode
+
+    /* resolution and layout */
+    oled_send_cmd(OLED_SET_DISP_START_LINE); // set display start line to 0
+
+    oled_send_cmd(OLED_SET_SEG_REMAP | 0x01); // set segment re-map
+    // column address 127 is mapped to SEG0
+
+    oled_send_cmd(OLED_SET_MUX_RATIO); // set multiplex ratio
+    oled_send_cmd(63); // default mux ratio
+
+    oled_send_cmd(OLED_SET_COM_OUT_DIR | 0x08); // set COM (common) output scan direction
+    // scan from bottom up, COM[N-1] to COM0
+
+    oled_send_cmd(OLED_SET_DISP_OFFSET); // set display offset
+    oled_send_cmd(0x00); // no offset
+
+    oled_send_cmd(OLED_SET_COM_PIN_CFG); // set COM (common) pins hardware configuration
+    oled_send_cmd(0x10); // manufacturer magic number
+
+    /* timing and driving scheme */
+    oled_send_cmd(OLED_SET_DISP_CLK_DIV); // set display clock divide ratio
+    oled_send_cmd(0x80); // div ratio of 1, standard freq
+
+    oled_send_cmd(OLED_SET_PRECHARGE); // set pre-charge period
+    oled_send_cmd(0xF1); // Vcc internally generated on our board
+
+    oled_send_cmd(OLED_SET_VCOM_DESEL); // set VCOMH deselect level
+    oled_send_cmd(0x30); // 0.83xVcc
+
+    /* display */
+    oled_send_cmd(OLED_SET_CONTRAST); // set contrast control
+    oled_send_cmd(0x80);
+
+    oled_send_cmd(OLED_SET_ENTIRE_ON); // set entire display on to follow RAM content
+
+    oled_send_cmd(OLED_SET_NORM_INV); // set normal (not inverted) display
+
+    oled_send_cmd(OLED_SET_CHARGE_PUMP); // set charge pump
+    oled_send_cmd(0x14); // Vcc internally generated on our board
+
+    oled_send_cmd(OLED_SET_SCROLL | 0x00); // deactivate horizontal scrolling if set
+    // this is necessary as memory writes will corrupt if scrolling was enabled
+
+    oled_send_cmd(OLED_SET_DISP | 0x01); // turn display on
+}

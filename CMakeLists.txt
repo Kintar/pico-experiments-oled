@@ -15,7 +15,7 @@ pico_sdk_init()
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(oled oled.c ssd1306.h)
+add_executable(oled oled.c ssd1306.h display.c display.h ssd1306.c)
 
 pico_set_program_name(oled "oled")
 pico_set_program_version(oled "0.1")

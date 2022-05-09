@@ -35,5 +35,11 @@
 #define OLED_WRITE_MODE _u(0xFE)
 #define OLED_READ_MODE _u(0xFF)
 
+void oled_send_cmd(uint8_t cmd);
+
+void oled_send_buf(const uint8_t buf[], int bufferLength);
+
+void oled_init();
+
 
 #endif //OLED_SSD1306_H
