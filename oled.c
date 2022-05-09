@@ -99,7 +99,7 @@ void oled_init() {
     // column address 127 is mapped to SEG0
 
     oled_send_cmd(OLED_SET_MUX_RATIO); // set multiplex ratio
-    oled_send_cmd(OLED_HEIGHT - 1);
+    oled_send_cmd(63); // default mux ratio
 
     oled_send_cmd(OLED_SET_COM_OUT_DIR | 0x08); // set COM (common) output scan direction
     // scan from bottom up, COM[N-1] to COM0
@@ -108,7 +108,7 @@ void oled_init() {
     oled_send_cmd(0x00); // no offset
 
     oled_send_cmd(OLED_SET_COM_PIN_CFG); // set COM (common) pins hardware configuration
-    oled_send_cmd(0x02); // manufacturer magic number
+    oled_send_cmd(0x10); // manufacturer magic number
 
     /* timing and driving scheme */
     oled_send_cmd(OLED_SET_DISP_CLK_DIV); // set display clock divide ratio
@@ -122,7 +122,7 @@ void oled_init() {
 
     /* display */
     oled_send_cmd(OLED_SET_CONTRAST); // set contrast control
-    oled_send_cmd(0xFF);
+    oled_send_cmd(0x80);
 
     oled_send_cmd(OLED_SET_ENTIRE_ON); // set entire display on to follow RAM content
 
@@ -138,9 +138,6 @@ void oled_init() {
 }
 
 
-// I2C defines
-// This example will use I2C0 on GPIO8 (SDA) and GPIO9 (SCL) running at 400KHz.
-// Pins can be changed, see the GPIO function select table in the datasheet for information on GPIO assignments
 #define I2C_PORT i2c0
 #define I2C_SDA 16
 #define I2C_SCL 17
@@ -173,13 +170,28 @@ int main()
 
     oled_send_buf(dsp->buffer, dsp->bufferLength);
 
-    // intro sequence: flash the screen 3 times
-    for (int i = 0; i < 3; i++) {
-        oled_send_cmd(0xA5); // ignore RAM, all pixels on
-        sleep_ms(500);
-        oled_send_cmd(0xA4); // go back to following RAM
-        sleep_ms(500);
+    // Draw a diagonal across the screen
+    uint8_t x = 0;
+    uint8_t y = 0;
+    for (y = 0; y < 64; y++) {
+        setPixel(dsp, x++, y, true);
+        setPixel(dsp, x++, y, true);
     }
+    // Draw a square in the middle
+    for (y = 30; y < 38; y++) {
+        for (x = 60; x < 68; x++) {
+            setPixel(dsp, x , y, true);
+        }
+    }
+    // Draw a line at the bottom of the yellow
+    y = 15;
+    for (x = 0; x < 128; x++) {
+        setPixel(dsp, x, y, true);
+    }
+    oled_send_buf(dsp->buffer, dsp->bufferLength);
+
+    oled_send_cmd(OLED_SET_CONTRAST);
+    oled_send_cmd(0x01);
 
     return 0;
 }
