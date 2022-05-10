@@ -6,8 +6,11 @@
 #include "hardware/i2c.h"
 #include "ssd1306.h"
 #include "display.h"
+#include <math.h>
 
 #define DISPLAY_PAGE_SIZE 8
+#define PI 3.14159265
+#define TAU PI * 2;
 
 void render(display *dsp) {
     oled_send_cmd(OLED_SET_COL_ADDR);
@@ -48,23 +51,27 @@ int main()
     display *dsp = display_create(128, 64);
     render(dsp);
 
-    display_println(dsp, "This is a test.");
-    display_println(dsp, "And only a test!");
-    display_println(dsp, "0123456789ABCDEF0123456789");
-
+    // Draw a sine wave
+    for (int x = 0; x < 128; x++) {
+        double val = ((double)x / 128) * TAU;
+        double y = sin(val);
+        y = y / 2 + 0.5;
+        display_setPixel(dsp, x, (int)(y * 64), true);
+    }
     render(dsp);
 
-    sleep_ms(2000);
-    display_println(dsp, "Are we done yet?");
-    render(dsp);
 
-    sleep_ms(2000);
-    display_println(dsp, "I wanna go home...");
-    render(dsp);
+    // configure horizontal scrolling
+    oled_send_cmd(OLED_SET_HORIZ_SCROLL | 0x00);
+    oled_send_cmd(0x00); // dummy byte
+    oled_send_cmd(0x00); // start page 0
+    oled_send_cmd(0x00); // time interval
+    oled_send_cmd(0x07); // end page 7
+    oled_send_cmd(0x00); // dummy byte
+    oled_send_cmd(0xFF); // dummy byte
 
-    sleep_ms(1000);
-    display_println(dsp, "Why won't you let me go...");
-    render(dsp);
+    // let's goooo!
+    oled_send_cmd(OLED_SET_SCROLL | 0x01);
 
     return 0;
 }
