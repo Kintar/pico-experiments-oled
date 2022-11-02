@@ -25,8 +25,8 @@ void render(display *dsp) {
 }
 
 #define I2C_PORT i2c0
-#define I2C_SDA 16
-#define I2C_SCL 17
+#define I2C_SDA 4
+#define I2C_SCL 5
 
 int main()
 {
