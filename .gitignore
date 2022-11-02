@@ -1,3 +1,16 @@
 build/
 cmake-build-debug/
-.idea/
+generated/
+build/
+pico-sdk/
+
+*.bin
+*.elf
+*.dis
+*.dis
+*.elf*
+*.hex
+*.uf2
+CMakeFiles/
+CMakeCache.txt
+Makefile
